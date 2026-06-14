@@ -1,0 +1,44 @@
+# -- secrets and local config --
+.env
+.env.example
+
+# -- data --
+*.db
+*.db-shm
+*.db-wal
+
+# -- build scaffolding (not for repo) --
+notes/
+docs/
+.claude/
+
+# -- python --
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+*.egg
+
+# -- test cache --
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# -- os --
+.DS_Store
+Thumbs.db
+
+# -- editors --
+.idea/
+.vscode/
+*.swp
+*.swo
