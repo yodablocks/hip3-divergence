@@ -17,6 +17,7 @@ from sources.hl_hip3 import extract_ctx
 from sources.hl_hip3_divergence import (
     compute_spreads,
     fetch_hermes_prices,
+    fetch_lazer_prices,
     fetch_hl_prices,
 )
 
@@ -84,12 +85,22 @@ def tick(db_path: str) -> int:
         log.error("tick: HL metaAndAssetCtxs failed: %s", exc)
         return 0
 
-    # -- one Hermes batch call for coins with a feed id --
-    hermes_prices: dict = {}
+    # -- one Hermes batch call for coins with a Hermes feed id --
+    pyth_prices: dict = {}
     try:
-        hermes_prices = fetch_hermes_prices(config.HIP3_WATCHLIST, config.PYTH_FEED_IDS)
+        pyth_prices = fetch_hermes_prices(config.HIP3_WATCHLIST, config.PYTH_FEED_IDS)
     except Exception as exc:
         log.warning("tick: Hermes fetch failed, continuing without pyth prices: %s", exc)
+
+    # -- one Lazer batch call for coins with a Lazer feed id --
+    if config.LAZER_FEED_IDS and config.PYTH_API_KEY:
+        try:
+            lazer = fetch_lazer_prices(
+                config.HIP3_WATCHLIST, config.LAZER_FEED_IDS, config.PYTH_API_KEY
+            )
+            pyth_prices.update(lazer)
+        except Exception as exc:
+            log.warning("tick: Lazer fetch failed, continuing without Lazer prices: %s", exc)
 
     with sqlite3.connect(db_path) as conn:
         for coin in config.HIP3_WATCHLIST:
@@ -106,8 +117,8 @@ def tick(db_path: str) -> int:
             pyth_px = pyth_conf = pyth_publish_time = pyth_stale_secs = None
             market_state = None
 
-            if coin in hermes_prices:
-                pyth_px, pyth_conf, pyth_publish_time = hermes_prices[coin]
+            if coin in pyth_prices:
+                pyth_px, pyth_conf, pyth_publish_time = pyth_prices[coin]
                 pyth_stale_secs = now_unix - pyth_publish_time
                 market_state = _market_state(pyth_stale_secs)
 

@@ -3,11 +3,12 @@
 #
 # Public API
 # ----------
-# build_hermes_params(watchlist, feed_ids)  -> (params, coin_for_id)
-# parse_hermes_price(parsed_entry)          -> (price, conf, publish_time)
-# fetch_hermes_prices(watchlist, feed_ids)  -> dict[str, tuple]
-# fetch_hl_prices(dex)                      -> tuple[dict[str,int], list[dict]]
-# compute_spreads(pyth_px, hl_oracle_px, hl_mark_px) -> (oracle_lag_bps | None, mark_premium_bps | None)
+# build_hermes_params(watchlist, feed_ids)              -> (params, coin_for_id)
+# parse_hermes_price(parsed_entry)                      -> (price, conf, publish_time)
+# fetch_hermes_prices(watchlist, feed_ids)              -> dict[str, tuple]
+# fetch_lazer_prices(watchlist, lazer_ids, api_key)     -> dict[str, tuple]
+# fetch_hl_prices(dex)                                  -> tuple[dict[str,int], list[dict]]
+# compute_spreads(pyth_px, hl_oracle_px, hl_mark_px)   -> (oracle_lag_bps | None, mark_premium_bps | None)
 
 import logging
 from typing import Any
@@ -84,6 +85,68 @@ def fetch_hermes_prices(
             log.warning("fetch_hermes_prices: unexpected feed id %s in response", feed_id)
             continue
         result[coin] = parse_hermes_price(entry)
+
+    return result
+
+
+def fetch_lazer_prices(
+    watchlist: list[str],
+    lazer_ids: dict[str, int],
+    api_key: str,
+) -> dict[str, tuple[float, None, int]]:
+    """
+    Batch fetch latest prices from Pyth Lazer for all watchlist coins that have
+    a Lazer numeric feed id.
+
+    Returns dict[coin] = (price, None, publish_time_secs).
+    Lazer does not return a confidence interval, so conf is always None.
+    publish_time is derived from timestampUs (microseconds -> seconds).
+    Raises on network error -- caller must handle.
+    """
+    coins_with_id = [c for c in watchlist if c in lazer_ids]
+    if not coins_with_id:
+        return {}
+
+    # Build reverse map: numeric id -> coin
+    id_for_coin = {lazer_ids[c]: c for c in coins_with_id}
+
+    # The Lazer symbol for xyz:COIN is "Pyth.HL.<COIN>/USDC".
+    symbols = [f"Pyth.HL.{c.split(':')[1]}/USDC" for c in coins_with_id]
+
+    payload = {
+        "channel": "real_time",
+        "formats": ["evm"],
+        "properties": ["price", "exponent"],
+        "symbols": symbols,
+        "parsed": True,
+        "jsonBinaryEncoding": "hex",
+    }
+
+    resp = requests.post(
+        config.LAZER_URL,
+        json=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    result: dict[str, tuple[float, None, int]] = {}
+    timestamp_us = int(data["parsed"]["timestampUs"])
+    publish_time = timestamp_us // 1_000_000
+
+    for entry in data["parsed"].get("priceFeeds", []):
+        feed_id = entry["priceFeedId"]
+        coin = id_for_coin.get(feed_id)
+        if coin is None:
+            log.warning("fetch_lazer_prices: unexpected feed id %d in response", feed_id)
+            continue
+        expo = entry["exponent"]
+        price = int(entry["price"]) * (10 ** expo)
+        result[coin] = (price, None, publish_time)
 
     return result
 
