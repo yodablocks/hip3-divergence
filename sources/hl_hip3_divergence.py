@@ -73,7 +73,7 @@ def fetch_hermes_prices(
     if not params:
         return {}
 
-    resp = requests.get(config.HERMES_URL, params=params, timeout=10)
+    resp = requests.get(config.HERMES_URL, params=params, timeout=20)
     resp.raise_for_status()
     data = resp.json()
 
