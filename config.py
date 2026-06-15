@@ -52,3 +52,17 @@ LAG_BPS_THRESHOLD     = float(os.getenv("LAG_BPS_THRESHOLD", "50"))
 PREMIUM_BPS_THRESHOLD = float(os.getenv("PREMIUM_BPS_THRESHOLD", "100"))
 STALE_SECS_THRESHOLD  = float(os.getenv("STALE_SECS_THRESHOLD", "120"))
 DB_PATH               = os.getenv("DB_PATH", "hip3.db")
+
+# validity layer
+HARDCODED_BOUNDS: dict[str, dict[str, float]] = {
+    "xyz:SPCX":   {"lower": -0.10, "upper": 0.10},
+    "xyz:NVDA":   {"lower": -0.10, "upper": 0.10},
+    "xyz:TSLA":   {"lower": -0.10, "upper": 0.10},
+    "xyz:GOLD":   {"lower": -0.10, "upper": 0.10},
+    "xyz:SILVER": {"lower": -0.10, "upper": 0.10},
+}
+SEDA_LAG_THRESHOLD_BPS  = float(os.getenv("SEDA_LAG_THRESHOLD_BPS", "20"))
+LAG_MOVE_THRESHOLD_BPS  = float(os.getenv("LAG_MOVE_THRESHOLD_BPS", "30"))
+CATCH_UP_WINDOW         = int(os.getenv("CATCH_UP_WINDOW", "4"))
+BOUND_PIN_THRESHOLD     = float(os.getenv("BOUND_PIN_THRESHOLD", "0.05"))
+BOUNDS_REFRESH_INTERVAL = int(os.getenv("BOUNDS_REFRESH_INTERVAL", "120"))

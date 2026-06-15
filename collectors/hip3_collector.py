@@ -13,12 +13,20 @@ import time
 from datetime import datetime, timezone
 
 import config
-from sources.hl_hip3 import extract_ctx
+from sources.hl_hip3 import extract_ctx, fetch_hip3_meta
 from sources.hl_hip3_divergence import (
     compute_spreads,
     fetch_hermes_prices,
     fetch_lazer_prices,
     fetch_hl_prices,
+)
+from validity import (
+    compute_bound_proximity,
+    compute_oracle_catching_up,
+    compute_oracle_source,
+    compute_signal_valid,
+    upsert_bounds,
+    write_validity_tick,
 )
 
 logging.basicConfig(
@@ -102,7 +110,10 @@ def tick(db_path: str) -> int:
         except Exception as exc:
             log.warning("tick: Lazer fetch failed, continuing without Lazer prices: %s", exc)
 
+    tick_rows: dict[str, dict] = {}
+
     with sqlite3.connect(db_path) as conn:
+        # -- price pass --
         for coin in config.HIP3_WATCHLIST:
             ctx = extract_ctx(coin, coin_index, ctxs)
             if ctx is None:
@@ -143,6 +154,7 @@ def tick(db_path: str) -> int:
             )
 
             _write_price_row(conn, row)
+            tick_rows[coin] = row
             rows_written += 1
 
             log.info(
@@ -166,6 +178,34 @@ def tick(db_path: str) -> int:
                 _write_event_row(conn, ts, coin, "pyth_stale",
                                  pyth_stale_secs, config.STALE_SECS_THRESHOLD)
 
+        # -- validity pass (after all price rows are written so catch-up can read history) --
+        validity_summary: list[str] = []
+        for coin, row in tick_rows.items():
+            oracle_source = compute_oracle_source(
+                row["pyth_stale_secs"], row["market_state"], row["oracle_lag_bps"]
+            )
+            catching_up, direction, streak = compute_oracle_catching_up(coin, conn)
+            proximity, pinned = compute_bound_proximity(
+                row["hl_mark_px"], row["hl_oracle_px"], coin, conn
+            )
+            valid = compute_signal_valid(catching_up, oracle_source, pinned)
+
+            write_validity_tick(ts, coin, {
+                "oracle_catching_up": int(catching_up),
+                "lag_direction":      direction,
+                "lag_streak":         streak,
+                "oracle_source":      oracle_source,
+                "bound_proximity":    proximity,
+                "bound_pinned":       int(pinned),
+                "signal_valid":       int(valid),
+            }, conn)
+
+            short = coin.split(":")[-1]
+            validity_summary.append(f"{short} src={oracle_source} valid={valid}")
+
+        if validity_summary:
+            log.info("validity: %s", " | ".join(validity_summary))
+
         conn.commit()
 
     return rows_written
@@ -187,6 +227,18 @@ def main() -> None:
         config.HIP3_DEX, config.HIP3_WATCHLIST, args.interval, args.db,
     )
 
+    def _refresh_bounds() -> None:
+        try:
+            meta, _ = fetch_hip3_meta(config.HIP3_DEX)
+            with sqlite3.connect(args.db) as conn:
+                upsert_bounds(config.HIP3_WATCHLIST, meta.get("universe", []), conn)
+                conn.commit()
+            log.info("bounds refreshed for %d coins", len(config.HIP3_WATCHLIST))
+        except Exception as exc:
+            log.warning("bounds refresh failed: %s", exc)
+
+    _refresh_bounds()
+
     # SIGTERM from systemd: set flag, let the current tick finish cleanly.
     stop = False
 
@@ -198,12 +250,16 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
+    tick_count = 0
     try:
         while not stop:
             written = tick(args.db)
+            tick_count += 1
             log.info("tick complete: %d rows written", written)
             if args.once:
                 break
+            if tick_count % config.BOUNDS_REFRESH_INTERVAL == 0:
+                _refresh_bounds()
             # Sleep in short increments so a signal wakes us promptly.
             for _ in range(args.interval):
                 if stop:
