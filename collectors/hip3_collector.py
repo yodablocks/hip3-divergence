@@ -7,6 +7,7 @@
 
 import argparse
 import logging
+import signal
 import sqlite3
 import time
 from datetime import datetime, timezone
@@ -175,12 +176,30 @@ def main() -> None:
         config.HIP3_DEX, config.HIP3_WATCHLIST, args.interval, args.db,
     )
 
-    while True:
-        written = tick(args.db)
-        log.info("tick complete: %d rows written", written)
-        if args.once:
-            break
-        time.sleep(args.interval)
+    # SIGTERM from systemd: set flag, let the current tick finish cleanly.
+    stop = False
+
+    def _handle_signal(sig, _frame):
+        nonlocal stop
+        log.info("signal %s received, finishing current tick then stopping", sig)
+        stop = True
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+    try:
+        while not stop:
+            written = tick(args.db)
+            log.info("tick complete: %d rows written", written)
+            if args.once:
+                break
+            # Sleep in short increments so a signal wakes us promptly.
+            for _ in range(args.interval):
+                if stop:
+                    break
+                time.sleep(1)
+    finally:
+        log.info("HIP-3 collector stopped")
 
 
 if __name__ == "__main__":

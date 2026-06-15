@@ -11,6 +11,7 @@
 notes/
 docs/
 .claude/
+DEPLOY.md
 
 # -- python --
 __pycache__/

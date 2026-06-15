@@ -5,7 +5,7 @@ HL_INFO_URL = "https://api.hyperliquid.xyz/info"
 HERMES_URL  = "https://hermes.pyth.network/v2/updates/price/latest"
 
 HIP3_DEX       = os.getenv("HIP3_DEX", "xyz")
-HIP3_WATCHLIST = os.getenv("HIP3_WATCHLIST", "xyz:SPCX,xyz:NVDA,xyz:GOLD").split(",")
+HIP3_WATCHLIST = os.getenv("HIP3_WATCHLIST", "xyz:SPCX,xyz:NVDA,xyz:TSLA,xyz:GOLD,xyz:SILVER").split(",")
 
 
 def _load_pyth_feed_ids() -> dict[str, str]:

@@ -1,0 +1,18 @@
+[Unit]
+Description=HIP-3 three-price divergence collector (xyz dex)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=marco
+WorkingDirectory=/mnt/liqdata/hip3-divergence
+EnvironmentFile=/mnt/liqdata/hip3-divergence/.env
+ExecStart=/mnt/liqdata/venv/bin/python -m collectors.hip3_collector --interval 30 --db /mnt/liqdata/data/hip3.db
+Restart=on-failure
+RestartSec=30
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
