@@ -174,12 +174,28 @@ collectors/
   hip3_collector.py              poll loop, price pass, validity pass, SIGTERM shutdown
 db/
   schema.sql                     all five tables and indexes
+scripts/
+  analyze_open.py                equity open catch-up analysis (pre-open gap, FM1 window,
+                                 mark behavior, commodity baseline)
 deploy/
   hip3-collector.service         systemd unit for Raspberry Pi
 tests/
   test_hl_hip3.py                coin index and ctx resolution (6 tests)
   test_hl_hip3_divergence.py     price parsing and spread computation (8 tests)
   test_validity.py               validity layer -- all three FMs (28 tests)
+```
+
+## Analysis scripts
+
+**`scripts/analyze_open.py`** -- equity open catch-up analysis. Reads from a local DB snapshot and prints four sections: pre-open gap (peak lag, first/last tick), catch-up window (FM1 ticks fired, resolution time), mark behavior (pre vs. post premium), and commodity baseline.
+
+```bash
+# Pull a consistent snapshot from the Pi first
+ssh marco@192.168.1.20 "sqlite3 /mnt/liqdata/data/hip3.db '.backup /tmp/hip3_snapshot.db'" \
+  && scp marco@192.168.1.20:/tmp/hip3_snapshot.db /tmp/hip3_analysis.db
+
+# Run the analysis
+python scripts/analyze_open.py --db /tmp/hip3_analysis.db --date 2026-06-16
 ```
 
 ## Running tests
