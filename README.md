@@ -190,6 +190,19 @@ tests/
 
 **`scripts/dashboard.py`** -- live terminal dashboard. Reads directly from the Pi DB, refreshes every 10 seconds, shows validity state per coin with color-coded lag and FM flags.
 
+```
+                 HIP-3 Dashboard   2026-06-16 06:08:18 UTC   last tick 17s ago
+╔════════╦═════════╦═══════════╦═══════════╦═══════════╦══════════╦══════════╦═══════╦═════════╗
+║ Coin   ║ State   ║ Source    ║    Oracle ║      Mark ║  Lag bps ║ Prem bps ║  Prox ║ Valid   ║
+╠════════╬═════════╬═══════════╬═══════════╬═══════════╬══════════╬══════════╬═══════╬═════════╣
+║ GOLD   ║ fresh   ║ pyth_live ║ 4316.1000 ║ 4316.0000 ║    -0.27 ║    -0.23 ║ 0.500 ║ ✓       ║
+║ NVDA   ║ closed  ║ seda_cmp  ║  211.3300 ║  211.3900 ║   -58.44 ║    +2.84 ║ 0.501 ║ x FM2   ║
+║ SILVER ║ fresh   ║ pyth_live ║   69.3410 ║   69.3510 ║    +0.57 ║    +1.44 ║ 0.501 ║ ✓       ║
+║ SPCX   ║ fresh   ║ pyth_live ║  211.6500 ║  211.5800 ║    -2.10 ║    -3.31 ║ 0.498 ║ ✓       ║
+║ TSLA   ║ closed  ║ seda_cmp  ║  405.1800 ║  405.1700 ║  -140.47 ║    -0.25 ║ 0.500 ║ x FM2   ║
+╚════════╩═════════╩═══════════╩═══════════╩═══════════╩══════════╩══════════╩═══════╩═════════╝
+```
+
 ```bash
 # Run on the Pi directly
 ssh marco@192.168.1.20 "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
