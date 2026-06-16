@@ -25,7 +25,7 @@ mark_premium_bps = (hl_mark_px   - hl_oracle_px) / hl_oracle_px * 10_000
 
 **Commodities (GOLD, SILVER):** Feed is always fresh. Both spreads sit within ~2 bps. The throttle is invisible when the feed is live and the book is deep.
 
-**Equities (NVDA, TSLA) outside market hours:** The Hermes equity feed freezes at the last close. The xyz updater continues pushing an off-hours price from a SEDA composite source. The accumulated drift from Friday close to Monday open can reach 100-300+ bps -- a quantified pre-open gap that resolves at 15:30 UTC.
+**Equities (NVDA, TSLA) outside market hours:** The Hermes equity feed freezes at the last close. The xyz updater continues pushing an off-hours price from a SEDA composite source. The accumulated drift from Friday close to Monday open can reach 100-300+ bps -- a quantified pre-open gap that resolves at 15:30 UTC. During off-hours `market_state=closed`; at open it flips to `fresh` as the Hermes feed resumes.
 
 **SPCX:** Anchored via Pyth Lazer (`Pyth.HL.SPCX/USDC`, feed ID 99934). All three prices and both spreads are live 24/7. During active trading the oracle tracks Lazer to within a few bps.
 
@@ -64,7 +64,7 @@ python -m collectors.hip3_collector          # continuous
 | `POLL_INTERVAL_SECS` | `15` | Seconds between ticks |
 | `LAG_BPS_THRESHOLD` | `50` | Emit event when `oracle_lag_bps` exceeds this |
 | `PREMIUM_BPS_THRESHOLD` | `100` | Emit event when `mark_premium_bps` exceeds this |
-| `STALE_SECS_THRESHOLD` | `120` | Mark state `stale` beyond this age in seconds |
+| `STALE_SECS_THRESHOLD` | `120` | Mark state `stale` (or `closed` for equity coins outside market hours) beyond this age in seconds |
 | `SEDA_LAG_THRESHOLD_BPS` | `20` | Minimum lag to classify source as `seda_composite` |
 | `LAG_MOVE_THRESHOLD_BPS` | `30` | Minimum directional move across window to flag catch-up |
 | `CATCH_UP_WINDOW` | `4` | Ticks to look back for catch-up detection |
