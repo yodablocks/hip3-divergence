@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS hip3_prices (
     open_interest     REAL,
     oracle_lag_bps    REAL,    -- (hl_oracle_px - pyth_px) / pyth_px * 1e4
     mark_premium_bps  REAL,    -- (hl_mark_px - hl_oracle_px) / hl_oracle_px * 1e4
-    market_state      TEXT,    -- fresh | stale
+    market_state      TEXT,    -- fresh | stale | closed
     PRIMARY KEY (ts, coin)
 );
 

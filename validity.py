@@ -68,14 +68,14 @@ def compute_oracle_source(
     Returns "pyth_live" | "seda_composite" | "unknown"
 
     pyth_live:      market_state is "fresh" -- Hermes or Lazer is the live anchor
-    seda_composite: market_state is "stale" and |oracle_lag_bps| > SEDA_LAG_THRESHOLD_BPS
+    seda_composite: market_state is "stale" or "closed" and |oracle_lag_bps| > SEDA_LAG_THRESHOLD_BPS
                     (oracle is diverging above the frozen Pyth price)
-    unknown:        stale but lag is small, or no Pyth data at all
+    unknown:        stale/closed but lag is small, or no Pyth data at all
     """
     if market_state == "fresh":
         return "pyth_live"
     if (
-        market_state == "stale"
+        market_state in ("stale", "closed")
         and oracle_lag_bps is not None
         and abs(oracle_lag_bps) > config.SEDA_LAG_THRESHOLD_BPS
     ):

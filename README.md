@@ -35,7 +35,7 @@ Three conditions make `oracle_lag_bps` unreliable as a signal. The validity laye
 
 **FM1 -- oracle catch-up:** After a fast price move the oracle lags and then chases Pyth in a directional streak. Signals read during the catch-up reflect the old price, not the new one. Detected by watching `oracle_lag_bps` across a rolling window of 4 ticks: if all steps move the same direction and the total move exceeds 30 bps, `oracle_catching_up=1`.
 
-**FM2 -- SEDA composite source:** Outside equity market hours the xyz updater switches from Hermes to a SEDA composite oracle. The lag is not throttle noise -- it is a genuine divergence from a different price source. Detected by combining `market_state=stale` with `|oracle_lag_bps| > 20 bps`. When active, `oracle_source="seda_composite"`.
+**FM2 -- SEDA composite source:** Outside equity market hours the xyz updater switches from Hermes to a SEDA composite oracle. The lag is not throttle noise -- it is a genuine divergence from a different price source. Detected by combining `market_state=stale|closed` with `|oracle_lag_bps| > 20 bps`. When active, `oracle_source="seda_composite"`. Equity coins show `market_state=closed` during predictable off-hours (Mon-Fri outside 15:30-22:00 UTC) and `market_state=stale` only when the feed stops unexpectedly during open hours.
 
 **FM3 -- discovery bound pinning:** HIP-3 markets have +-10% discovery bounds relative to the oracle. When mark_px is pinned at the boundary, `mark_premium_bps` is a structural artifact, not a book signal. Detected by computing `bound_proximity` (0.0 = lower bound, 1.0 = upper bound) and flagging when proximity is within 5% of either edge.
 
@@ -112,7 +112,7 @@ funding           REAL
 open_interest     REAL
 oracle_lag_bps    REAL     -- NULL if pyth_px is NULL
 mark_premium_bps  REAL
-market_state      TEXT     -- "fresh" | "stale" | NULL
+market_state      TEXT     -- "fresh" | "stale" | "closed" | NULL
 ```
 
 **`hip3_events`** -- one row when a spread or staleness threshold is crossed.

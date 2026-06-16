@@ -1,5 +1,6 @@
 # -- config --
 import os
+from datetime import time as _time, timezone as _tz, datetime as _dt
 
 HL_INFO_URL = "https://api.hyperliquid.xyz/info"
 HERMES_URL  = "https://hermes.pyth.network/v2/updates/price/latest"
@@ -46,6 +47,21 @@ def _load_lazer_feed_ids() -> dict[str, int]:
 
 
 LAZER_FEED_IDS: dict[str, int] = _load_lazer_feed_ids()
+
+# Equity market schedule (UTC). Coins in this set use schedule-aware market_state.
+# market_state = "fresh" during open hours, "closed" outside, "stale" if feed stops during open.
+EQUITY_COINS: frozenset[str] = frozenset({"xyz:NVDA", "xyz:TSLA"})
+_EQUITY_OPEN  = _time(15, 30, 0)   # 15:30 UTC
+_EQUITY_CLOSE = _time(22, 0, 0)    # 22:00 UTC
+_EQUITY_DAYS  = frozenset({0, 1, 2, 3, 4})  # Mon-Fri (weekday() values)
+
+
+def is_equity_market_open(dt: _dt | None = None) -> bool:
+    """Return True when US equity market is open (Mon-Fri 15:30-22:00 UTC)."""
+    if dt is None:
+        dt = _dt.now(_tz.utc)
+    return dt.weekday() in _EQUITY_DAYS and _EQUITY_OPEN <= dt.time() < _EQUITY_CLOSE
+
 
 POLL_INTERVAL_SECS    = int(os.getenv("POLL_INTERVAL_SECS", "15"))
 LAG_BPS_THRESHOLD     = float(os.getenv("LAG_BPS_THRESHOLD", "50"))

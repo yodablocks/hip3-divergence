@@ -71,10 +71,15 @@ def _write_event_row(
     """, (ts, coin, kind, value, threshold))
 
 
-def _market_state(pyth_stale_secs: float | None) -> str | None:
+def _market_state(pyth_stale_secs: float | None, coin: str | None = None) -> str | None:
     if pyth_stale_secs is None:
         return None
-    return "stale" if pyth_stale_secs > config.STALE_SECS_THRESHOLD else "fresh"
+    if pyth_stale_secs <= config.STALE_SECS_THRESHOLD:
+        return "fresh"
+    # Feed is stale -- distinguish predictable market close from unexpected staleness.
+    if coin in config.EQUITY_COINS and not config.is_equity_market_open():
+        return "closed"
+    return "stale"
 
 
 def tick(db_path: str) -> int:
@@ -131,7 +136,7 @@ def tick(db_path: str) -> int:
             if coin in pyth_prices:
                 pyth_px, pyth_conf, pyth_publish_time = pyth_prices[coin]
                 pyth_stale_secs = now_unix - pyth_publish_time
-                market_state = _market_state(pyth_stale_secs)
+                market_state = _market_state(pyth_stale_secs, coin)
 
             oracle_lag_bps, mark_premium_bps = compute_spreads(
                 pyth_px, hl_oracle_px, hl_mark_px

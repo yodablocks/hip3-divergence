@@ -65,6 +65,13 @@ def test_oracle_source_stale_no_lag():
     # No oracle_lag_bps (coin has no Pyth feed)
     assert compute_oracle_source(300.0, "stale", None) == "unknown"
 
+def test_oracle_source_closed_large_lag():
+    # "closed" behaves the same as "stale" for FM2 classification
+    assert compute_oracle_source(300.0, "closed", 250.0) == "seda_composite"
+
+def test_oracle_source_closed_small_lag():
+    assert compute_oracle_source(300.0, "closed", 5.0) == "unknown"
+
 def test_oracle_source_no_pyth():
     # market_state None: no pyth feed at all
     assert compute_oracle_source(None, None, None) == "unknown"
