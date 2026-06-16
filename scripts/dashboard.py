@@ -5,7 +5,7 @@
 #   /mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py
 #
 # Or from Mac over SSH:
-#   ssh marco@192.168.1.20 "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
+#   ssh user@pi "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
 
 import argparse
 import sqlite3

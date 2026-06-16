@@ -205,7 +205,7 @@ tests/
 
 ```bash
 # Run on the Pi directly
-ssh marco@192.168.1.20 "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
+ssh user@pi "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
 
 # Optional flags
 #   --db PATH       override DB path
@@ -216,8 +216,8 @@ ssh marco@192.168.1.20 "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergenc
 
 ```bash
 # Pull a consistent snapshot from the Pi first
-ssh marco@192.168.1.20 "sqlite3 /mnt/liqdata/data/hip3.db '.backup /tmp/hip3_snapshot.db'" \
-  && scp marco@192.168.1.20:/tmp/hip3_snapshot.db /tmp/hip3_analysis.db
+ssh user@pi "sqlite3 /mnt/liqdata/data/hip3.db '.backup /tmp/hip3_snapshot.db'" \
+  && scp user@pi:/tmp/hip3_snapshot.db /tmp/hip3_analysis.db
 
 # Run the analysis
 python scripts/analyze_open.py --db /tmp/hip3_analysis.db --date 2026-06-16
