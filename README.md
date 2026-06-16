@@ -175,6 +175,7 @@ collectors/
 db/
   schema.sql                     all five tables and indexes
 scripts/
+  dashboard.py                   live terminal dashboard -- validity, lag, premium per coin
   analyze_open.py                equity open catch-up analysis (pre-open gap, FM1 window,
                                  mark behavior, commodity baseline)
 deploy/
@@ -186,6 +187,17 @@ tests/
 ```
 
 ## Analysis scripts
+
+**`scripts/dashboard.py`** -- live terminal dashboard. Reads directly from the Pi DB, refreshes every 10 seconds, shows validity state per coin with color-coded lag and FM flags.
+
+```bash
+# Run on the Pi directly
+ssh marco@192.168.1.20 "/mnt/liqdata/venv/bin/python /mnt/liqdata/hip3-divergence/scripts/dashboard.py"
+
+# Optional flags
+#   --db PATH       override DB path
+#   --refresh N     refresh interval in seconds (default: 10)
+```
 
 **`scripts/analyze_open.py`** -- equity open catch-up analysis. Reads from a local DB snapshot and prints four sections: pre-open gap (peak lag, first/last tick), catch-up window (FM1 ticks fired, resolution time), mark behavior (pre vs. post premium), and commodity baseline.
 
@@ -247,4 +259,4 @@ sqlite3 hip3.db "
 
 ## Dependencies
 
-`requests` and `sqlite3` (stdlib). Python 3.12+. Pyth Lazer API key required for Lazer feeds (apply at pyth.network).
+`requests`, `rich`, and `sqlite3` (stdlib). Python 3.12+. Pyth Lazer API key required for Lazer feeds (apply at pyth.network).
